@@ -1,0 +1,29 @@
+apply plugin: 'java-library'
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    api 'org.slf4j:slf4j-api:1.7.25'
+    implementation 'org.apache.commons:commons-lang3:3.5' 
+    implementation 'commons-io:commons-io:2.4'
+    implementation 'org.apache.commons:commons-collections4:4.1'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.8.8.1'
+    implementation 'com.fasterxml.jackson.module:jackson-module-parameter-names:2.8.8'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.8.8'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.8.8'
+    implementation 'org.glassfish.jersey.core:jersey-client:2.25.1'
+    implementation 'com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:2.8.8'
+    testImplementation 'org.testng:testng:6.10'
+}
+
+test {
+    useTestNG()
+}
+
+task copyRuntimeLibs(type: Copy) {
+  into "$buildDir/dependency-libs"
+  from configurations.runtimeClasspath
+}
+
