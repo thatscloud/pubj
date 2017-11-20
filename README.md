@@ -1,6 +1,6 @@
 # pubj
 
-A Java wrapper for the [TRN PUBG REST API]((https://pubgtracker.com/site-api).
+A Java wrapper for the [TRN PUBG REST API](https://pubgtracker.com/site-api).
 
 ## Prerequisites
 
