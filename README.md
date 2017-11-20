@@ -42,5 +42,5 @@ to generate a key.
 ## Rate limiting
 
 Use no more than one `org.thatscloud.pubj.Pubg` instance per application. This will ensure that
-the rate-limiting imposed by [TRN](https://thetrackernetwork.com/) is respected.
+the rate limiting imposed by [TRN](https://thetrackernetwork.com/) is respected.
 
