@@ -1,0 +1,33 @@
+stages:
+  - build
+  - test
+  - artefact
+
+cache:
+  paths:
+    - .gradle/wrapper
+    - .gradle/caches
+
+build:
+  stage: build
+  script:
+    - ./gradlew -i -g .gradle classes
+
+test:
+  stage: test
+  script:
+    - ./gradlew -i -g .gradle check
+  artifacts:
+    when: always
+    paths: 
+      - build/reports/tests
+    expire_in: 1 week
+    
+artefact:
+    stage: artefact
+    script:
+      - ./gradlew -i -g .gradle assemble
+    artifacts:
+      paths:
+        - build/libs/*.jar
+      expire_in: 1 week
