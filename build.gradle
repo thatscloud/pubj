@@ -38,9 +38,13 @@ task javadocJar(type: Jar) {
 
 ext.getGitVersion = {
     def out = new ByteArrayOutputStream()
-    exec {
+    if (exec {
         commandLine 'git', 'describe', '--long', '--dirty'
-        standardOutput = out 
+        standardOutput = out
+        errorOutput = new ByteArrayOutputStream()
+        ignoreExitValue = true 
+    }.getExitValue() != 0) {
+        return null
     }
     def matcher = 
         out.toString().trim() =~ 
@@ -68,9 +72,13 @@ ext.getGitVersion = {
 
 ext.isBaselineGitVersion = {
     def out = new ByteArrayOutputStream()
-    exec {
+    if (exec {
         commandLine 'git', 'describe', '--long', '--dirty'
-        standardOutput = out 
+        standardOutput = out
+        errorOutput = new ByteArrayOutputStream()
+        ignoreExitValue true
+    }.getExitValue() != 0) {
+      return false
     }
     def matcher = 
         out.toString().trim() =~ /v.*?-([0-9]+)-[^\-]+(?:-(dirty))?/
