@@ -1,4 +1,8 @@
-apply plugin: 'java-library'
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'com.jfrog.bintray' version '1.8.0'
+}
 
 repositories {
     jcenter()
@@ -20,6 +24,158 @@ dependencies {
 
 test {
     useTestNG()
+}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+ext.getGitVersion = {
+    def out = new ByteArrayOutputStream()
+    exec {
+        commandLine 'git', 'describe', '--long', '--dirty'
+        standardOutput = out 
+    }
+    def matcher = 
+        out.toString().trim() =~ 
+        /v([0-9]+)\.([0-9]+)\.([0-9]+)-([0-9]+)-([^\-]+)(?:-(dirty))?/
+    if (matcher.matches()) {
+        def majorVersion = Integer.parseInt(matcher.group(1))
+        def minorVersion = Integer.parseInt(matcher.group(2))
+        def patchVersion = Integer.parseInt(matcher.group(3))
+        def numberOfCommits = Integer.parseInt(matcher.group(4))
+        def commitHash = matcher.group(5)
+        def dirty = Objects.equals(matcher.group(6), 'dirty') 
+        if (numberOfCommits == 0 && !dirty) {
+            majorVersion + '.' + minorVersion + '.' + patchVersion
+        }
+        else {
+            majorVersion + '.' + minorVersion + '.' + ( patchVersion + 1 ) +
+            '-adhoc.' + numberOfCommits + (dirty ? '.dirty' : '') + '+' +
+            commitHash 
+        }
+    }
+    else {
+        null
+    }
+}
+
+ext.isBaselineGitVersion = {
+    def out = new ByteArrayOutputStream()
+    exec {
+        commandLine 'git', 'describe', '--long', '--dirty'
+        standardOutput = out 
+    }
+    def matcher = 
+        out.toString().trim() =~ /v.*?-([0-9]+)-[^\-]+(?:-(dirty))?/
+    if (matcher.matches()) {
+        def numberOfCommits = Integer.parseInt(matcher.group(1))
+        def dirty = Objects.equals(matcher.group(2), 'dirty') 
+        numberOfCommits == 0 && !dirty
+    }
+    else {
+        false
+    }
+}
+
+version = getGitVersion()
+group = 'org.thatscloud'
+
+task version {
+    doLast {
+        println getVersion()
+        if (isBaselineGitVersion()) {
+            println 'This is a baseline (releasable) version.'
+        }
+        else {
+            println 'This is a non-baseline (non-releasable) version.'
+        }
+    }
+}
+
+bintrayUpload {
+  doFirst {
+      if (!isBaselineGitVersion()) {
+          throw new GradleException( 
+              'Must be a baseline git version to be relased to bintray. ' +
+              'Run the \'version\' task for more information.')
+      }
+      property('bintrayUser')
+      property('bintrayKey')
+      property('sonatypeOssUser')
+      property('sonatypeOssPassword')
+  }
+}
+
+bintray {
+    publish = true
+    user = findProperty('bintrayUser')
+    key = findProperty('bintrayKey')
+    publications = ['mavenJava'] 
+    pkg {
+        repo = 'maven'
+        name = 'pubj'
+        userOrg = 'thatscloud'
+        licenses = ['MIT']
+        vcsUrl = 'https://gitlab.com/thatscloud/pubj'
+        version {
+            gpg {
+                sign = true
+            }
+            name = getVersion()
+            desc = 'pubj ' + getVersion()
+            released  = new Date()
+            vcsTag = 'v' + getVersion()
+            mavenCentralSync {
+                user = findProperty('sonatypeOssUser')
+                password = findProperty('sonatypeOssPassword')
+            }
+        }
+    }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            artifact sourcesJar
+            artifact javadocJar
+            pom.withXml {
+                asNode().children().last() + { 
+                    // See http://gradle.1045684.n5.nabble.com/New-maven-publishing-featureset-tp5711110p5711311.html 
+                    // and http://groovy-lang.org/closures.html#_delegation_strategy_2
+                    resolveStrategy = Closure.DELEGATE_FIRST 
+                    description 'pubj'
+                    name 'pubj'
+                    url 'https://gitlab.com/thatscloud/pubj'
+                    licenses {
+                        license {
+                            name 'The MIT License'
+                            url 'https://opensource.org/licenses/MIT'
+                            distribution 'repo'
+                        }
+                    }
+                    developers {
+                        developer {
+                            id "oss"
+                            name "OSS Developers"
+                            email "oss@thatscloud.org"
+                        }
+                    }
+                    
+                    scm {
+                       url 'https://gitlab.com/thatscloud/pubj'
+                    }
+                }
+            }
+        }
+    }
 }
 
 task copyRuntimeLibs(type: Copy) {
