@@ -2,6 +2,7 @@ stages:
   - build
   - test
   - artefact
+  - publish
 
 cache:
   paths:
@@ -30,4 +31,23 @@ artefact:
     artifacts:
       paths:
         - build/libs/*.jar
+      expire_in: 1 week
+      
+publish:
+    stage: publish
+    script:
+      - > 
+        ./gradlew -i -g .gradle 
+        -PbintrayUser=$BINTRAY_USER 
+        -PbintrayKey=$BINTRAY_KEY 
+        -PsonatypeOssUser=$SONATYPE_OSS_USER 
+        -PsonatypeOssPassword=$SONATYPE_OSS_PASSWORD
+        bintrayUpload
+    only:
+      - master
+    when: manual
+    artifacts:
+      paths:
+        - build/libs/*.jar
+        - build/publications/mavenJava/*.xml
       expire_in: 1 week
